@@ -1710,7 +1710,7 @@ CONF_DUMP = "dump"
 CONF_DHW_RUN = "dhw_run"
 CONF_SUPPLY_SETPOINT_REGULATED = "supply_setpoint_regulated"
 
-DEFAULT_UPDATE_INTERVAL = 30 # seconds
+DEFAULT_UPDATE_INTERVAL = 30 * 1000 # milliseconds (30 seconds)
 DEFAULT_DELAY_BETWEEN_REQUESTS = 250 # milliseconds
 DEFAULT_TV_OFFSET = 0.0
 DEFAULT_TVBH_OFFSET = 0.0
@@ -1735,21 +1735,21 @@ for sensor_conf in sensor_configuration:
                     accuracy_decimals=sensor_conf.get("accuracy_decimals", cv.UNDEFINED),
                     state_class=sensor_conf.get("state_class", cv.UNDEFINED),
                     icon=sensor_conf.get("icon", cv.UNDEFINED)
-                ).extend({cv.Optional(CONF_UPDATE_INTERVAL): cv.uint16_t}),
+                ).extend({cv.Optional(CONF_UPDATE_INTERVAL): cv.positive_time_period_milliseconds}),
             })
         case "text_sensor":
             entity_schemas.update({
                 cv.Optional(name): text_sensor.text_sensor_schema(
                     CanTextSensor,
                     icon=sensor_conf.get("icon", cv.UNDEFINED)
-                ).extend({cv.Optional(CONF_UPDATE_INTERVAL): cv.uint16_t}),
+                ).extend({cv.Optional(CONF_UPDATE_INTERVAL): cv.positive_time_period_milliseconds}),
             })
         case "binary_sensor":
             entity_schemas.update({
                 cv.Optional(name): binary_sensor.binary_sensor_schema(
                     CanBinarySensor,
                     icon=sensor_conf.get("icon", cv.UNDEFINED)
-                ).extend({cv.Optional(CONF_UPDATE_INTERVAL): cv.uint16_t}),
+                ).extend({cv.Optional(CONF_UPDATE_INTERVAL): cv.positive_time_period_milliseconds}),
             })
         case "select":
             entity_schemas.update({
@@ -1757,7 +1757,7 @@ for sensor_conf in sensor_configuration:
                     CanSelect,
                     entity_category=ENTITY_CATEGORY_CONFIG,
                     icon=sensor_conf.get("icon", cv.UNDEFINED)
-                ).extend({cv.Optional(CONF_UPDATE_INTERVAL): cv.uint16_t}),
+                ).extend({cv.Optional(CONF_UPDATE_INTERVAL): cv.positive_time_period_milliseconds}),
             })
         case "switch":
             entity_schemas.update({
@@ -1787,7 +1787,7 @@ for sensor_conf in sensor_configuration:
                             entity_category=ENTITY_CATEGORY_CONFIG,
                             icon=sensor_conf.get("icon", cv.UNDEFINED)
                         ).extend({
-                            cv.Optional(CONF_UPDATE_INTERVAL): cv.uint16_t,
+                            cv.Optional(CONF_UPDATE_INTERVAL): cv.positive_time_period_milliseconds,
                             cv.Optional(CONF_MODE, default="BOX"): cv.enum(number.NUMBER_MODES, upper=True)
                         }),
                         "select": select.select_schema(
@@ -1795,7 +1795,7 @@ for sensor_conf in sensor_configuration:
                             entity_category=ENTITY_CATEGORY_CONFIG,
                             icon=sensor_conf.get("icon", cv.UNDEFINED)
                         ).extend({
-                            cv.Optional(CONF_UPDATE_INTERVAL): cv.uint16_t,
+                            cv.Optional(CONF_UPDATE_INTERVAL): cv.positive_time_period_milliseconds,
                             select_options_schema: cv.Schema({
                                 cv.float_range(
                                     min=sensor_conf.get("min_value"),
@@ -1888,7 +1888,7 @@ CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(DaikinRotexCanComponent),
         cv.Required(CONF_CAN_ID): cv.use_id(CanbusComponent),
-        cv.Optional(CONF_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL): cv.uint16_t,
+        cv.Optional(CONF_UPDATE_INTERVAL, default=DEFAULT_UPDATE_INTERVAL): cv.positive_time_period_milliseconds,
         cv.Optional(CONF_DELAY_BETWEEN_REQUESTS, default=DEFAULT_DELAY_BETWEEN_REQUESTS): cv.uint16_t,
         cv.Optional(CONF_TV_OFFSET, default=DEFAULT_TV_OFFSET): cv.float_,
         cv.Optional(CONF_TVBH_OFFSET, default=DEFAULT_TVBH_OFFSET): cv.float_,
@@ -2040,9 +2040,15 @@ async def to_code(config):
                     case _:
                         raise Exception("Unknown type: " + sens_conf.get("type"))
 
-                update_interval = yaml_sensor_conf.get(CONF_UPDATE_INTERVAL, -1)
-                if update_interval < 0:
+                update_interval = yaml_sensor_conf.get(CONF_UPDATE_INTERVAL, None)
+                if update_interval is None:
                     update_interval = config[CONF_UPDATE_INTERVAL]
+                
+                # Convert TimePeriodMilliseconds to integer milliseconds
+                if hasattr(update_interval, 'total_milliseconds'):
+                    update_interval = int(update_interval.total_milliseconds)
+                else:
+                    update_interval = int(update_interval)
 
                 async def handle_lambda():
                     lamb = str(sens_conf.get("handle_lambda")) if "handle_lambda" in sens_conf else "return 0;"

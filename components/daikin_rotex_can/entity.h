@@ -34,7 +34,7 @@ public:
         float divider;
         bool isSigned;
         std::list<std::string> update_entities;
-        uint16_t update_interval;
+        uint32_t update_interval;
         THandleFunc handle_lambda;
         TUpdateFunc update_lambda;
         TSetFunc set_lambda;
@@ -72,7 +72,7 @@ public:
             float _divider,
             bool _isSigned,
             std::list<std::string> const& _update_entities,
-            uint16_t _update_interval,
+            uint32_t _update_interval,
             THandleFunc _handle_lambda,
             TUpdateFunc _update_lambda,
             TSetFunc _set_lambda,
@@ -160,7 +160,7 @@ public:
     bool is_command_configured() const;
 
     bool isGetInProgress() const;
-    uint16_t get_update_interval() const { return m_config.update_interval; }
+    uint32_t get_update_interval() const { return m_config.update_interval; }
 
     static std::array<uint16_t, 7> calculate_reponse(TMessage const& message);
 
@@ -193,7 +193,7 @@ inline bool TEntity::isGetNeeded() const {
         return false;
     }
 
-    const uint32_t update_interval = get_update_interval() * 1000;
+    const uint32_t update_interval = get_update_interval();
     return getLastUpdate() == 0 || (esphome::millis() > (getLastUpdate() + update_interval));
 }
 
@@ -202,7 +202,7 @@ inline uint32_t TEntity::getOverdueTime() const {
         return 0u;
     }
 
-    const uint32_t update_interval = get_update_interval() * 1000;
+    const uint32_t update_interval = get_update_interval();
     const uint32_t due_time = getLastUpdate() + update_interval;
     const uint32_t now = esphome::millis();
 
