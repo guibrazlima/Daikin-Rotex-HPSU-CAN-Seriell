@@ -167,7 +167,7 @@ void DaikinRotexCanComponent::on_post_handle(TEntity* pEntity, TEntity::TVariant
         CanSelect* p_optimized_defrosting = m_entity_manager.get_select(OPTIMIZED_DEFROSTING);
         CanSelect* p_temperature_antifreeze = m_entity_manager.get_select(TEMPERATURE_ANTIFREEZE);
         if (p_optimized_defrosting != nullptr && p_temperature_antifreeze != nullptr) {
-            if (p_temperature_antifreeze->current_option() != Translation::T_OFF && m_optimized_defrosting.value() != 0x0) {
+            if (p_temperature_antifreeze->current_option().str() != Translation::T_OFF && m_optimized_defrosting.value() != 0x0) {
                 p_optimized_defrosting->publish_select_key(0x0);
                 m_optimized_defrosting.save(0x0);
                 Utils::log(TAG, "set %s: %d", OPTIMIZED_DEFROSTING.c_str(), m_optimized_defrosting.value());
